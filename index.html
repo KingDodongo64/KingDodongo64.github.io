@@ -59,6 +59,39 @@ var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.5503
 			restitution: 0.9
 		}, scene);
 
+		BABYLON.SceneLoader.ImportMesh(null, "resources/", "speed.obj", scene, function(meshes) {
+		var boostMesh = meshes[0], boosts = [];
+		boostMesh.material = new BABYLON.StandardMaterial("boostMaterial", scene);
+		boostMesh.material.diffuseColor = new BABYLON.Color3(1, 1, 0);
+		boostMesh.scaling = new BABYLON.Vector3(5, 5, 5);
+		boostMesh.setEnabled(false);
+		function boostAt(xFn, zFn, t) {
+		var newBoost = boostMesh.clone('boost');
+		newBoost.position = new BABYLON.Vector3(xFn(t), 3.2, zFn(t));
+		newBoost.rotation.y = -derivAngle(t, xFn, zFn);
+		newBoost.setEnabled(true);
+		boosts.push(newBoost);
+		}
+
+		// Place boosts here
+		boostAt(xFn, zFn, 0.05);
+		//BOOSTSSSSS
+
+		scene.registerAfterRender(function() {
+		boosts.forEach(function(boost, i){
+		if(boost.intersectsMesh(playerSphere)){
+		boost.dispose();
+		boosts.splice(i,1);
+		var vel = playerSphere.physicsImpostor.getLinearVelocity();
+		playerSphere.applyImpulse(vel.normalize().scale(100), playerSphere.getAbsolutePosition());
+		} else {
+		boost.rotation.y += 0.01
+		}
+		});
+		});
+		});
+
+
 		var camera = new BABYLON.ArcRotateCamera("Camera", 0, (3 * Math.PI) / 8, 20, playerSphere, scene);
 		camera.attachControl(canvas, true);
 
@@ -67,6 +100,11 @@ var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.5503
 		//----RAMPS & WALLS----//
 
 		rampAt(xFn, zFn, 0.19, -Math.PI / 3, scene);
+		rampAt(xFn, zFn, 0.2, -Math.PI / 3, scene);
+		rampAt(xFn, zFn, 0.21, -Math.PI / 3, scene);
+		rampAt(xFn, zFn, 0.22, -Math.PI / 3, scene);
+		rampAt(xFn, zFn, 0.23, -Math.PI / 3, scene);
+		rampAt(xFn, zFn, 0.24, -Math.PI / 3, scene);
 		rampAt(xFn, zFn, 0.25, -Math.PI / 4, scene);
 		rampAt(xFn, zFn, 0.315, -Math.PI / 4, scene);
 
@@ -74,6 +112,10 @@ var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.5503
 
 
 		//----RAMPS & WALLS----//
+
+		var startTime;
+		var timer = document.querySelector('#timer');
+
 
 		scene.registerAfterRender(function() {
 			var vel = playerSphere.physicsImpostor.getLinearVelocity();
@@ -90,6 +132,7 @@ var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.5503
 			var right = BABYLON.Vector3.TransformCoordinates(forward, BABYLON.Matrix.RotationY(Math.PI / 2));
 
 			if (keys.w) {
+				if(!startTime){ startTime = Date.now(); }
 			playerSphere.applyImpulse(forward, playerSphere.getAbsolutePosition());
 			}
 			if (keys.s) {
@@ -108,12 +151,17 @@ var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.5503
 				win();
 			}
 
-			
-			var angle = (derivAngle(currentT, xFn, zFn) - (Math.PI));
-			camera.alpha += (angle - camera.alpha) / 32;
+			//OPTIONAL
+			//var angle = (derivAngle(currentT, xFn, zFn) - (Math.PI));
+			//camera.alpha += (angle - camera.alpha) / 32;
+			//OPTIONAL
 
 			if (playerSphere.position.y < -10) {
 			lost();
+			}
+
+			if(startTime) {
+				timer.innerHTML = ((Date.now() - startTime) / 1000).toFixed(2).replace('.',':');
 			}
 		});
 
@@ -229,9 +277,23 @@ var _yFn = function(t) {var fns = [function(t) {return (Math.pow((1-t),3)*0.5503
 		height: 100%;
 		touch-action: none;
 	}
+
+	#timer {
+		position: absolute;
+		left:10px;
+		bottom:10px;
+		color:#ccc;
+		font: 52px georgia;
+	}
+
+
+
 </style>
 </head>
 <body onload="start()">
 	<canvas id= "renderCanvas"></canvas>
+
+	<div id="timer">00:00</div>
+
 </body>
 </html>
